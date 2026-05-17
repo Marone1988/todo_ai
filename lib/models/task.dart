@@ -6,6 +6,7 @@ class Task {
   final bool isCompleted;
   final String type; // 'task', 'event', 'reminder'
   final String language; // 'fr', 'en', 'ar'
+  final String category; // 'work', 'personal', 'other'
 
   Task({
     this.id,
@@ -15,6 +16,7 @@ class Task {
     this.isCompleted = false,
     this.type = 'task',
     this.language = 'fr',
+    this.category = 'personal',
   });
 
   Map<String, dynamic> toMap() {
@@ -26,6 +28,7 @@ class Task {
       'isCompleted': isCompleted ? 1 : 0,
       'type': type,
       'language': language,
+      'category': category,
     };
   }
 
@@ -38,6 +41,7 @@ class Task {
       isCompleted: map['isCompleted'] == 1,
       type: map['type'] ?? 'task',
       language: map['language'] ?? 'fr',
+      category: map['category'] ?? 'personal',
     );
   }
 
@@ -49,6 +53,7 @@ class Task {
     bool? isCompleted,
     String? type,
     String? language,
+    String? category,
   }) {
     return Task(
       id: id ?? this.id,
@@ -58,6 +63,7 @@ class Task {
       isCompleted: isCompleted ?? this.isCompleted,
       type: type ?? this.type,
       language: language ?? this.language,
+      category: category ?? this.category,
     );
   }
 }

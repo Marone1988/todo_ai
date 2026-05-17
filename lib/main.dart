@@ -39,12 +39,12 @@ class VocalTodoApp extends StatelessWidget {
       title: 'Vocal Todo',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF0A0A0F),
-        colorScheme: const ColorScheme.dark(
-          primary: Color(0xFF6C63FF),
-          secondary: Color(0xFF6C63FF),
-          surface: Color(0xFF1A1A2E),
+        brightness: Brightness.light,
+        scaffoldBackgroundColor: const Color(0xFFF2F2F7),
+        colorScheme: const ColorScheme.light(
+          primary: Color(0xFF6366F1),
+          secondary: Color(0xFF6366F1),
+          surface: Colors.white,
         ),
         useMaterial3: true,
       ),

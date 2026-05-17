@@ -29,7 +29,8 @@ class DatabaseService {
         dueDate TEXT,
         isCompleted INTEGER NOT NULL DEFAULT 0,
         type TEXT NOT NULL DEFAULT 'task',
-        language TEXT NOT NULL DEFAULT 'fr'
+        language TEXT NOT NULL DEFAULT 'fr',
+        category TEXT NOT NULL DEFAULT 'personal'
       )
     ''');
   }
