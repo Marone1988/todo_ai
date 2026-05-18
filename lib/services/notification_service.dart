@@ -1,67 +1,99 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:timezone/timezone.dart' as tz;
 import 'package:timezone/data/latest.dart' as tz;
 import '../models/task.dart';
 
 class NotificationService {
   static final NotificationService instance = NotificationService._init();
-  final FlutterLocalNotificationsPlugin _notifications =
+  final FlutterLocalNotificationsPlugin _plugin =
       FlutterLocalNotificationsPlugin();
 
   NotificationService._init();
 
-  Future<void> initialize() async {
-    tz.initializeTimeZones();
+  // ── Canal Android ─────────────────────────────────────────────
+  static const _channelId   = 'vocal_todo_channel';
+  static const _channelName = 'Vocal Todo — Rappels';
+  static const _channelDesc = 'Rappels de tâches programmés';
 
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings(
+  // ── Initialisation ────────────────────────────────────────────
+
+  Future<void> initialize() async {
+    // 1. Charger les données timezone et positionner sur la timezone locale
+    tz.initializeTimeZones();
+    final String localTz = await FlutterTimezone.getLocalTimezone();
+    tz.setLocalLocation(tz.getLocation(localTz));
+
+    // 2. Paramètres d'init Android/iOS
+    const android = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
       requestBadgePermission: true,
       requestSoundPermission: true,
     );
 
-    const settings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
+    await _plugin.initialize(
+      const InitializationSettings(android: android, iOS: ios),
+      onDidReceiveNotificationResponse: (_) {},
     );
 
-    await _notifications.initialize(settings);
+    // 3. Demander les permissions (Android 13+ = POST_NOTIFICATIONS)
     await _requestPermissions();
   }
 
   Future<void> _requestPermissions() async {
-    await _notifications
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+    if (android != null) {
+      // POST_NOTIFICATIONS (API 33+)
+      await android.requestNotificationsPermission();
+      // SCHEDULE_EXACT_ALARM (API 31+)
+      await android.requestExactAlarmsPermission();
+    }
   }
+
+  // ── Planification ─────────────────────────────────────────────
 
   Future<void> scheduleTaskNotification(Task task) async {
     if (task.dueDate == null || task.id == null) return;
 
-    final scheduledDate = tz.TZDateTime.from(
-      task.dueDate!.subtract(const Duration(minutes: 15)),
-      tz.local,
+    // Calculer l'heure de la notification (reminderMinutes avant l'échéance)
+    final notifTime = task.dueDate!.subtract(
+      Duration(minutes: task.reminderMinutes),
     );
 
-    if (scheduledDate.isBefore(tz.TZDateTime.now(tz.local))) return;
+    // Convertir en TZDateTime local (timezone du téléphone)
+    final scheduled = tz.TZDateTime.from(notifTime, tz.local);
 
-    final typeIcon = task.type == 'event' ? '📅' : task.type == 'reminder' ? '⏰' : '✅';
+    // Ne pas planifier dans le passé
+    if (scheduled.isBefore(tz.TZDateTime.now(tz.local))) return;
 
-    await _notifications.zonedSchedule(
+    // Titre
+    final priorityIcon =
+        task.priority == 'high' ? '🔴 ' : task.priority == 'low' ? '⬇️ ' : '';
+    final recIcon = task.recurrence != 'none' ? ' 🔁' : '';
+    final title   = '$priorityIcon${task.title}$recIcon';
+
+    // Corps du message selon le délai
+    final body = _buildBody(task.reminderMinutes);
+
+    await _plugin.zonedSchedule(
       task.id!,
-      '$typeIcon ${task.title}',
-      'Dans 15 minutes',
-      scheduledDate,
+      title,
+      body,
+      scheduled,
       NotificationDetails(
         android: AndroidNotificationDetails(
-          'vocal_todo_channel',
-          'Vocal Todo',
-          channelDescription: 'Rappels de tâches',
-          importance: Importance.high,
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
+          playSound: true,
+          enableVibration: true,
+          // Afficher même si l'app est en premier plan
+          fullScreenIntent: false,
         ),
         iOS: const DarwinNotificationDetails(
           presentAlert: true,
@@ -75,11 +107,27 @@ class NotificationService {
     );
   }
 
+  String _buildBody(int minutes) {
+    if (minutes == 0)    return "C'est l'heure !";
+    if (minutes < 60)    return 'Dans $minutes minutes';
+    if (minutes < 1440)  return 'Dans ${minutes ~/ 60}h';
+    if (minutes < 2880)  return 'Demain';
+    return 'Dans ${minutes ~/ 1440} jours';
+  }
+
+  // ── Annulation ────────────────────────────────────────────────
+
   Future<void> cancelNotification(int id) async {
-    await _notifications.cancel(id);
+    await _plugin.cancel(id);
   }
 
   Future<void> cancelAllNotifications() async {
-    await _notifications.cancelAll();
+    await _plugin.cancelAll();
+  }
+
+  // ── Debug : liste des notifs planifiées ──────────────────────
+
+  Future<List<PendingNotificationRequest>> pendingNotifications() async {
+    return _plugin.pendingNotificationRequests();
   }
 }

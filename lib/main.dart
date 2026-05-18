@@ -1,31 +1,28 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'l10n/strings.dart';
+import 'theme/app_theme.dart';
 import 'services/notification_service.dart';
-import 'screens/home_screen.dart';
+import 'services/location_service.dart';
+import 'screens/splash_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialiser les locales pour les dates
   await initializeDateFormatting('fr_FR', null);
   await initializeDateFormatting('ar', null);
+  await initializeDateFormatting('en_US', null);
 
-  // Initialiser les notifications
   await NotificationService.instance.initialize();
+  await LocationService.initialize();
+  await LocationService.startMonitoring();
+  await LocationService.registerMonthlyCalendarSync();
 
-  // Forcer le mode portrait
   await SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
   ]);
-
-  // Style de la barre de statut
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
 
   runApp(const VocalTodoApp());
 }
@@ -35,20 +32,40 @@ class VocalTodoApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Vocal Todo',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        brightness: Brightness.light,
-        scaffoldBackgroundColor: const Color(0xFFF2F2F7),
-        colorScheme: const ColorScheme.light(
-          primary: Color(0xFF6366F1),
-          secondary: Color(0xFF6366F1),
-          surface: Colors.white,
-        ),
-        useMaterial3: true,
-      ),
-      home: const HomeScreen(),
+    return ValueListenableBuilder<String>(
+      valueListenable: appLang,
+      builder: (context, lang, _) {
+        return ValueListenableBuilder<ThemeMode>(
+          valueListenable: appThemeMode,
+          builder: (context, mode, _) {
+            final isDark = mode == ThemeMode.dark;
+            SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
+              statusBarColor: Colors.transparent,
+              statusBarIconBrightness:
+                  isDark ? Brightness.light : Brightness.dark,
+            ));
+            return MaterialApp(
+              title: 'Vocal Todo',
+              debugShowCheckedModeBanner: false,
+              locale: Locale(lang),
+              supportedLocales: const [
+                Locale('en'),
+                Locale('fr'),
+                Locale('ar'),
+              ],
+              localizationsDelegates: const [
+                GlobalMaterialLocalizations.delegate,
+                GlobalWidgetsLocalizations.delegate,
+                GlobalCupertinoLocalizations.delegate,
+              ],
+              themeMode: mode,
+              theme: lightTheme,
+              darkTheme: darkTheme,
+              home: const SplashScreen(),
+            );
+          },
+        );
+      },
     );
   }
 }

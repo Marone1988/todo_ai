@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/widget_bg"
+    android:orientation="vertical"
+    android:padding="14dp">
+
+    <!-- Header -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical">
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="🎤 Vocal Todo"
+            android:textSize="13sp"
+            android:textStyle="bold"
+            android:textColor="#6366F1" />
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:background="#EEF0FF"
+            android:paddingLeft="8dp"
+            android:paddingRight="8dp"
+            android:paddingTop="3dp"
+            android:paddingBottom="3dp"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/widget_count"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="0"
+                android:textSize="13sp"
+                android:textStyle="bold"
+                android:textColor="#6366F1" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text=" tasks"
+                android:textSize="11sp"
+                android:textColor="#6366F1" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <!-- Séparateur -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="8dp"
+        android:background="#F3F4F6" />
+
+    <!-- Tâche 1 -->
+    <TextView
+        android:id="@+id/widget_task_0"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:drawablePadding="6dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#111827"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:visibility="gone" />
+
+    <!-- Tâche 2 -->
+    <TextView
+        android:id="@+id/widget_task_1"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:drawablePadding="6dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#111827"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:visibility="gone" />
+
+    <!-- Tâche 3 -->
+    <TextView
+        android:id="@+id/widget_task_2"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="4dp"
+        android:drawablePadding="6dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#111827"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:visibility="gone" />
+
+    <!-- Tâche 4 -->
+    <TextView
+        android:id="@+id/widget_task_3"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:drawablePadding="6dp"
+        android:text=""
+        android:textSize="12sp"
+        android:textColor="#111827"
+        android:ellipsize="end"
+        android:maxLines="1"
+        android:visibility="gone" />
+
+    <!-- État vide -->
+    <TextView
+        android:id="@+id/widget_empty"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Nothing for today 🎉"
+        android:textSize="12sp"
+        android:textColor="#9CA3AF"
+        android:gravity="center"
+        android:layout_gravity="center"
+        android:visibility="visible" />
+
+</LinearLayout>
