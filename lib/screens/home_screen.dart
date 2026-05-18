@@ -26,7 +26,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final SpeechToText _speech = SpeechToText();
   final FlutterTts _tts = FlutterTts();
   final AiService _aiService = AiService();
@@ -69,6 +69,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _initSpeech();
     _loadTasks();
     _loadUserPrefs();
@@ -1343,7 +1344,32 @@ class _HomeScreenState extends State<HomeScreen>
     _pulseController.dispose();
     appLang.removeListener(_syncVoiceLang);
     appThemeMode.removeListener(_onLangChange);
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  /// Vérification à chaque retour au premier plan
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _checkAccessOnResume();
+    }
+  }
+
+  Future<void> _checkAccessOnResume() async {
+    final ok = await hasAccess();
+    if (!ok && mounted) {
+      // Essai expiré → Paywall immédiat, sans possibilité de revenir en arrière
+      Navigator.of(context).pushAndRemoveUntil(
+        PageRouteBuilder(
+          pageBuilder: (_, __, ___) => const PaywallScreen(),
+          transitionsBuilder: (_, anim, __, child) =>
+              FadeTransition(opacity: anim, child: child),
+          transitionDuration: const Duration(milliseconds: 400),
+        ),
+        (route) => false,
+      );
+    }
   }
 }
 
