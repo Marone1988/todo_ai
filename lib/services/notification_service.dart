@@ -93,6 +93,10 @@ class NotificationService {
           largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
           playSound: true,
           enableVibration: true,
+          autoCancel: false,         // reste dans le tiroir jusqu'à tap
+          ongoing: false,
+          // Bandeau heads-up visible plus longtemps (30s avant auto-dismiss)
+          timeoutAfter: 30000,
           // Afficher même si l'app est en premier plan
           fullScreenIntent: false,
         ),

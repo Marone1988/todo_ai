@@ -913,6 +913,7 @@ class _HomeScreenState extends State<HomeScreen>
     String selPriority = aiTask.priority;
     String selRec      = aiTask.recurrence;
     int selReminder    = aiTask.reminderMinutes;
+    bool pastDateError = false;
 
     return showModalBottomSheet<Task>(
       context: context,
@@ -1098,13 +1099,29 @@ class _HomeScreenState extends State<HomeScreen>
                         )),
                         if (selDate != null)
                           GestureDetector(
-                            onTap: () => setModal(() => selDate = null),
+                            onTap: () => setModal(() {
+                              selDate = null;
+                              pastDateError = false;
+                            }),
                             child: Icon(Icons.close, size: 16,
                                 color: context.textMuted),
                           ),
                       ]),
                     ),
                   ),
+                  // Erreur date passée
+                  if (pastDateError)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Row(children: const [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Color(0xFFEF4444), size: 14),
+                        SizedBox(width: 6),
+                        Text('Date déjà passée — choisissez une date future',
+                            style: TextStyle(
+                                fontSize: 12, color: Color(0xFFEF4444))),
+                      ]),
+                    ),
                   const SizedBox(height: 16),
 
                   // Rappel
@@ -1165,6 +1182,12 @@ class _HomeScreenState extends State<HomeScreen>
                         onTap: () {
                           final title = titleCtrl.text.trim();
                           if (title.isEmpty) return;
+                          // Refuser une date dans le passé
+                          if (selDate != null &&
+                              selDate!.isBefore(DateTime.now())) {
+                            setModal(() => pastDateError = true);
+                            return;
+                          }
                           Navigator.pop(ctx, aiTask.copyWith(
                             title: title,
                             category: selCat,

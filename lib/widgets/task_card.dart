@@ -139,6 +139,7 @@ class _TaskCardState extends State<TaskCard> {
     double? selLocationLng  = widget.task.locationLng;
     final locationCtrl = TextEditingController(text: widget.task.locationName ?? '');
     bool _geocoding = false;
+    bool _pastDateError = false;
 
     showModalBottomSheet(
       context: context,
@@ -172,7 +173,6 @@ class _TaskCardState extends State<TaskCard> {
 
                     TextField(
                       controller: titleCtrl,
-                      autofocus: true,
                       style: TextStyle(color: context.textPrimary),
                       decoration: InputDecoration(
                         labelText: t('field_title'),
@@ -310,6 +310,19 @@ class _TaskCardState extends State<TaskCard> {
                         ]),
                       ),
                     ),
+                    // Erreur date passée
+                    if (_pastDateError)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 6),
+                        child: Row(children: const [
+                          Icon(Icons.warning_amber_rounded,
+                              color: Color(0xFFEF4444), size: 14),
+                          SizedBox(width: 6),
+                          Text('Date déjà passée — choisissez une date future',
+                              style: TextStyle(
+                                  fontSize: 12, color: Color(0xFFEF4444))),
+                        ]),
+                      ),
                     const SizedBox(height: 16),
 
                     _label(t('reminder'), context),
@@ -569,6 +582,13 @@ class _TaskCardState extends State<TaskCard> {
                       Expanded(flex: 2,
                         child: GestureDetector(
                           onTap: () async {
+                            // Vérifier que la date n'est pas dans le passé
+                            if (selDate != null &&
+                                selDate!.isBefore(DateTime.now())) {
+                              setModal(() => _pastDateError = true);
+                              return;
+                            }
+                            setModal(() => _pastDateError = false);
                             final updated = widget.task.copyWith(
                               title: titleCtrl.text.trim(),
                               category: selCat,
