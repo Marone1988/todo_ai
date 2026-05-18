@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../l10n/strings.dart';
 import '../theme/app_theme.dart';
 import 'home_screen.dart';
+import 'paywall_screen.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -55,9 +56,10 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     if (_avatarPath != null) await prefs.setString('user_avatar', _avatarPath!);
     await prefs.setBool('onboarding_done', true);
     if (!mounted) return;
+    // Après l'onboarding → Paywall (premier accès)
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const HomeScreen(),
+        pageBuilder: (_, __, ___) => const PaywallScreen(fromOnboarding: true),
         transitionsBuilder: (_, animation, __, child) =>
             FadeTransition(opacity: animation, child: child),
         transitionDuration: const Duration(milliseconds: 400),

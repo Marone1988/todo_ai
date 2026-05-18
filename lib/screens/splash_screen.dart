@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_screen.dart';
 import 'onboarding_screen.dart';
+import 'paywall_screen.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -72,17 +73,25 @@ class _SplashScreenState extends State<SplashScreen>
     _textCtrl.forward();
     await Future.delayed(const Duration(milliseconds: 3000));
 
-    // Fetch onboarding state during exit animation (adds no visible delay)
+    // Fetch onboarding + abonnement state
     final prefs = await SharedPreferences.getInstance();
     final onboardingDone = prefs.getBool('onboarding_done') ?? false;
+    final access = await hasAccess();
 
     _exitCtrl.forward();
     await Future.delayed(const Duration(milliseconds: 420));
     if (mounted) {
+      Widget dest;
+      if (!onboardingDone) {
+        dest = const OnboardingScreen();      // 1ère fois → onboarding
+      } else if (!access) {
+        dest = const PaywallScreen();         // essai expiré → paywall
+      } else {
+        dest = const HomeScreen();            // accès OK → app
+      }
       Navigator.of(context).pushReplacement(
         PageRouteBuilder(
-          pageBuilder: (_, __, ___) =>
-              onboardingDone ? const HomeScreen() : const OnboardingScreen(),
+          pageBuilder: (_, __, ___) => dest,
           transitionsBuilder: (_, animation, __, child) =>
               FadeTransition(opacity: animation, child: child),
           transitionDuration: const Duration(milliseconds: 350),

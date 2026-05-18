@@ -16,6 +16,7 @@ import '../l10n/strings.dart';
 import '../theme/app_theme.dart';
 import 'alerts_screen.dart';
 import 'settings_screen.dart';
+import 'paywall_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -39,6 +40,7 @@ class _HomeScreenState extends State<HomeScreen>
   int _currentIndex = 0;
   String _userName = 'Alex';
   String? _avatarPath;
+  int _trialDaysLeft = 3;
   String? _categoryFilter;
 
   // ── Langue de la reconnaissance vocale (indépendante de l'UI) ──
@@ -98,10 +100,12 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _loadUserPrefs() async {
     final prefs = await SharedPreferences.getInstance();
+    final days = await trialDaysLeft();
     if (!mounted) return;
     setState(() {
-      _userName   = prefs.getString('user_name')  ?? 'Alex';
-      _avatarPath = prefs.getString('user_avatar');
+      _userName      = prefs.getString('user_name')  ?? 'Alex';
+      _avatarPath    = prefs.getString('user_avatar');
+      _trialDaysLeft = days;
     });
   }
 
@@ -528,6 +532,37 @@ class _HomeScreenState extends State<HomeScreen>
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // ── Badge essai gratuit ──────────────────────────────────
+        if (_trialDaysLeft > 0)
+          GestureDetector(
+            onTap: () => Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => const PaywallScreen())),
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                    colors: [Color(0xFF6366F1), Color(0xFF8B5CF6)]),
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Row(mainAxisSize: MainAxisSize.min, children: [
+                const Icon(Icons.star_rounded, color: Colors.white, size: 13),
+                const SizedBox(width: 6),
+                Text(
+                  _trialDaysLeft == 1
+                      ? 'Essai gratuit — dernier jour'
+                      : 'Essai gratuit — $_trialDaysLeft jours restants',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700),
+                ),
+                const SizedBox(width: 6),
+                const Icon(Icons.arrow_forward_ios_rounded,
+                    color: Colors.white70, size: 10),
+              ]),
+            ),
+          ),
         // ── Ligne date + recherche ──────────────────────────────
         Row(
           crossAxisAlignment: CrossAxisAlignment.center,
