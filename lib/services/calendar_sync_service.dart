@@ -31,50 +31,65 @@ class CalendarSyncService {
   // ── Import: Calendar events → Tasks ─────────────────────────
 
   /// Import events from the given calendar for the next [days] days.
-  /// Returns number of tasks created.
-  Future<int> importFromCalendar(String calendarId, {int days = 7}) async {
+  /// Returns number of tasks created (skips duplicates).
+  Future<int> importFromCalendar(String calendarId, {int days = 30}) async {
     final now = DateTime.now();
+    final start = DateTime(now.year, now.month, 1); // début du mois courant
     final end = now.add(Duration(days: days));
-    final result = await _plugin.retrieveEvents(
-      calendarId,
-      RetrieveEventsParams(startDate: now, endDate: end),
-    );
-    final events = result.data ?? [];
-    int count = 0;
-    for (final event in events) {
-      if (event.title == null || event.title!.trim().isEmpty) continue;
-      final task = Task(
-        title: event.title!.trim(),
-        dueDate: event.start?.toLocal(),
-        type: 'event',
-        category: 'other',
-        language: 'fr',
-      );
-      await DatabaseService.instance.createTask(task);
-      count++;
-    }
-    return count;
+    return _importEvents(calendarId, from: start, to: end);
   }
 
-  /// Import events between [from] and [to].
+  /// Import events between [from] and [to] (skips duplicates).
   Future<int> importRangeFromCalendar(
       String calendarId, {required DateTime from, required DateTime to}) async {
+    return _importEvents(calendarId, from: from, to: to);
+  }
+
+  /// Internal import: retrieves events and skips already-imported ones.
+  Future<int> _importEvents(String calendarId,
+      {required DateTime from, required DateTime to}) async {
+    // Ensure permissions before retrieval
+    final hasPerm = await hasPermissions();
+    if (!hasPerm) {
+      final granted = await requestPermissions();
+      if (!granted) return 0;
+    }
+
     final result = await _plugin.retrieveEvents(
       calendarId,
       RetrieveEventsParams(startDate: from, endDate: to),
     );
-    final events = result.data ?? [];
+    if (result.data == null) return 0;
+
+    // Load existing tasks once to check duplicates
+    final existing = await DatabaseService.instance.getAllTasks();
+
     int count = 0;
-    for (final event in events) {
-      if (event.title == null || event.title!.trim().isEmpty) continue;
+    for (final event in result.data!) {
+      final title = event.title?.trim();
+      if (title == null || title.isEmpty) continue;
+
+      final eventDate = event.start?.toLocal();
+
+      // Skip duplicate: same title AND same day already imported
+      final isDup = existing.any((t) =>
+          t.title == title &&
+          t.dueDate != null &&
+          eventDate != null &&
+          t.dueDate!.year  == eventDate.year &&
+          t.dueDate!.month == eventDate.month &&
+          t.dueDate!.day   == eventDate.day);
+      if (isDup) continue;
+
       final task = Task(
-        title: event.title!.trim(),
-        dueDate: event.start?.toLocal(),
+        title: title,
+        dueDate: eventDate,
         type: 'event',
         category: 'other',
         language: 'fr',
       );
-      await DatabaseService.instance.createTask(task);
+      final saved = await DatabaseService.instance.createTask(task);
+      existing.add(saved); // prevent dupes within the same batch
       count++;
     }
     return count;

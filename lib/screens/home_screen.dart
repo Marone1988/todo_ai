@@ -270,17 +270,26 @@ class _HomeScreenState extends State<HomeScreen>
           final saved = await DatabaseService.instance.createTask(taskToSave);
           await NotificationService.instance.scheduleTaskNotification(saved);
           await _loadTasks();
-          setState(() => _statusText = t('task_saved'));
+          _showSaveSuccess();
           await _setTtsLanguage(taskToSave.language);
           await _tts.speak('${t('task_added')}${taskToSave.title}');
-          Future.delayed(const Duration(seconds: 2), () {
-            if (mounted) setState(() => _statusText = '');
-          });
         } else {
           setState(() => _statusText = '');
         }
       }
     }
+  }
+
+  /// Affiche un grand ✓ vert animé au centre de l'écran, puis disparaît.
+  void _showSaveSuccess() {
+    final overlay = Overlay.of(context);
+    late OverlayEntry entry;
+    entry = OverlayEntry(
+      builder: (_) => _SaveSuccessOverlay(onDone: () {
+        if (entry.mounted) entry.remove();
+      }),
+    );
+    overlay.insert(entry);
   }
 
   /// Détecte la langue d'un texte basiquement (pour le TTS)
@@ -528,12 +537,34 @@ class _HomeScreenState extends State<HomeScreen>
                       fontSize: 13, fontWeight: FontWeight.w600,
                       color: context.textMuted, letterSpacing: 1.0)),
             ),
-            // Avatar
+            // Loupe en premier
+            GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: () => setState(() {
+                _showSearch = !_showSearch;
+                if (!_showSearch) { _searchQuery = ''; _searchCtrl.clear(); }
+              }),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                margin: const EdgeInsets.only(right: 8),
+                decoration: BoxDecoration(
+                  color: _showSearch
+                      ? context.primaryLight.withOpacity(0.12)
+                      : context.cardColor,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  _showSearch ? Icons.search_off : Icons.search,
+                  color: _showSearch ? context.primaryLight : context.textMuted,
+                  size: 20,
+                ),
+              ),
+            ),
+            // Avatar à droite
             GestureDetector(
               onTap: () { haptic(); setState(() => _currentIndex = 2); },
               child: Container(
                 width: 34, height: 34,
-                margin: const EdgeInsets.only(right: 8),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: context.cardColor,
@@ -547,27 +578,6 @@ class _HomeScreenState extends State<HomeScreen>
                         style: TextStyle(color: context.textPrimary, fontSize: 14, fontWeight: FontWeight.bold),
                       ))
                     : null,
-              ),
-            ),
-            GestureDetector(
-              behavior: HitTestBehavior.opaque,
-              onTap: () => setState(() {
-                _showSearch = !_showSearch;
-                if (!_showSearch) { _searchQuery = ''; _searchCtrl.clear(); }
-              }),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: _showSearch
-                      ? context.primaryLight.withOpacity(0.12)
-                      : context.cardColor,
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  _showSearch ? Icons.search_off : Icons.search,
-                  color: _showSearch ? context.primaryLight : context.textMuted,
-                  size: 20,
-                ),
               ),
             ),
           ],
@@ -994,14 +1004,16 @@ class _HomeScreenState extends State<HomeScreen>
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                           color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, children: [
-                    _editorChip('💼', t('cat_work'), 'work', selCat,
-                        (v) => setModal(() => selCat = v), ctx),
-                    _editorChip('👤', t('cat_personal'), 'personal', selCat,
-                        (v) => setModal(() => selCat = v), ctx),
-                    _editorChip('🌿', t('cat_other'), 'other', selCat,
-                        (v) => setModal(() => selCat = v), ctx),
-                  ]),
+                  _editorDropdown<String>(
+                    value: selCat,
+                    items: const [
+                      DropdownMenuItem(value: 'work',     child: Text('Travail')),
+                      DropdownMenuItem(value: 'personal', child: Text('Personnel')),
+                      DropdownMenuItem(value: 'other',    child: Text('Autre')),
+                    ],
+                    onChanged: (v) { if (v != null) setModal(() => selCat = v); },
+                    ctx: ctx,
+                  ),
                   const SizedBox(height: 16),
 
                   // Priorité
@@ -1009,16 +1021,16 @@ class _HomeScreenState extends State<HomeScreen>
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                           color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, children: [
-                    _editorChip('', t('prio_high'), 'high', selPriority,
-                        (v) => setModal(() => selPriority = v), ctx,
-                        activeColor: const Color(0xFFEF4444)),
-                    _editorChip('', t('prio_normal'), 'normal', selPriority,
-                        (v) => setModal(() => selPriority = v), ctx),
-                    _editorChip('', t('prio_low'), 'low', selPriority,
-                        (v) => setModal(() => selPriority = v), ctx,
-                        activeColor: const Color(0xFF9CA3AF)),
-                  ]),
+                  _editorDropdown<String>(
+                    value: selPriority,
+                    items: [
+                      DropdownMenuItem(value: 'high',   child: Row(children: [Container(width:10,height:10,decoration:const BoxDecoration(color:Color(0xFFEF4444),shape:BoxShape.circle)),const SizedBox(width:8),const Text('Haute')])),
+                      DropdownMenuItem(value: 'normal', child: Row(children: [Container(width:10,height:10,decoration:const BoxDecoration(color:Color(0xFFF59E0B),shape:BoxShape.circle)),const SizedBox(width:8),const Text('Normale')])),
+                      DropdownMenuItem(value: 'low',    child: Row(children: [Container(width:10,height:10,decoration:const BoxDecoration(color:Color(0xFF9CA3AF),shape:BoxShape.circle)),const SizedBox(width:8),const Text('Basse')])),
+                    ],
+                    onChanged: (v) { if (v != null) setModal(() => selPriority = v); },
+                    ctx: ctx,
+                  ),
                   const SizedBox(height: 16),
 
                   // Date & heure
@@ -1099,16 +1111,17 @@ class _HomeScreenState extends State<HomeScreen>
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                           color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    _editorRemChip(t('rem_at_time'), 0, selReminder,
-                        (v) => setModal(() => selReminder = v), ctx),
-                    _editorRemChip(t('rem_15min'), 15, selReminder,
-                        (v) => setModal(() => selReminder = v), ctx),
-                    _editorRemChip(t('rem_1h'), 60, selReminder,
-                        (v) => setModal(() => selReminder = v), ctx),
-                    _editorRemChip(t('rem_1d'), 1440, selReminder,
-                        (v) => setModal(() => selReminder = v), ctx),
-                  ]),
+                  _editorDropdown<int>(
+                    value: selReminder,
+                    items: const [
+                      DropdownMenuItem(value: 0,    child: Text("À l'heure")),
+                      DropdownMenuItem(value: 15,   child: Text('15 min avant')),
+                      DropdownMenuItem(value: 60,   child: Text('1 heure avant')),
+                      DropdownMenuItem(value: 1440, child: Text('1 jour avant')),
+                    ],
+                    onChanged: (v) { if (v != null) setModal(() => selReminder = v); },
+                    ctx: ctx,
+                  ),
                   const SizedBox(height: 16),
 
                   // Récurrence
@@ -1116,16 +1129,17 @@ class _HomeScreenState extends State<HomeScreen>
                       style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600,
                           color: context.textSecondary)),
                   const SizedBox(height: 8),
-                  Wrap(spacing: 8, runSpacing: 8, children: [
-                    _editorChip('🚫', t('rec_none'),    'none',    selRec,
-                        (v) => setModal(() => selRec = v), ctx),
-                    _editorChip('📅', t('rec_daily'),   'daily',   selRec,
-                        (v) => setModal(() => selRec = v), ctx),
-                    _editorChip('📆', t('rec_weekly'),  'weekly',  selRec,
-                        (v) => setModal(() => selRec = v), ctx),
-                    _editorChip('🗓', t('rec_monthly'), 'monthly', selRec,
-                        (v) => setModal(() => selRec = v), ctx),
-                  ]),
+                  _editorDropdown<String>(
+                    value: selRec,
+                    items: const [
+                      DropdownMenuItem(value: 'none',    child: Text('Jamais')),
+                      DropdownMenuItem(value: 'daily',   child: Text('Chaque jour')),
+                      DropdownMenuItem(value: 'weekly',  child: Text('Chaque semaine')),
+                      DropdownMenuItem(value: 'monthly', child: Text('Chaque mois')),
+                    ],
+                    onChanged: (v) { if (v != null) setModal(() => selRec = v); },
+                    ctx: ctx,
+                  ),
                   const SizedBox(height: 28),
 
                   // Boutons
@@ -1197,6 +1211,33 @@ class _HomeScreenState extends State<HomeScreen>
     );
   }
 
+  Widget _editorDropdown<T>({
+    required T value,
+    required List<DropdownMenuItem<T>> items,
+    required ValueChanged<T?> onChanged,
+    required BuildContext ctx,
+  }) {
+    return Container(
+      height: 48,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      decoration: BoxDecoration(
+        color: context.inputFill,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: DropdownButtonHideUnderline(
+        child: DropdownButton<T>(
+          value: value,
+          items: items,
+          onChanged: onChanged,
+          isExpanded: true,
+          dropdownColor: context.cardColor,
+          icon: Icon(Icons.keyboard_arrow_down_rounded, color: context.textMuted, size: 20),
+          style: TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: context.textPrimary),
+        ),
+      ),
+    );
+  }
+
   Widget _editorChip(String emoji, String label, String value, String selected,
       Function(String) onTap, BuildContext ctx, {Color? activeColor}) {
     final isSel = selected == value;
@@ -1244,5 +1285,73 @@ class _HomeScreenState extends State<HomeScreen>
     appLang.removeListener(_syncVoiceLang);
     appThemeMode.removeListener(_onLangChange);
     super.dispose();
+  }
+}
+
+// ── Overlay animé ✓ vert au centre ──────────────────────────────
+class _SaveSuccessOverlay extends StatefulWidget {
+  final VoidCallback onDone;
+  const _SaveSuccessOverlay({required this.onDone});
+  @override
+  State<_SaveSuccessOverlay> createState() => _SaveSuccessOverlayState();
+}
+
+class _SaveSuccessOverlayState extends State<_SaveSuccessOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _scale;
+  late final Animation<double> _opacity;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 450));
+    _scale   = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
+    _opacity = Tween<double>(begin: 0.0, end: 1.0).animate(
+        CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.35)));
+    _ctrl.forward();
+    // Auto-dismiss après 1,3s
+    Future.delayed(const Duration(milliseconds: 1300), () async {
+      if (!mounted) return;
+      await _ctrl.reverse(from: 1.0);
+      widget.onDone();
+    });
+  }
+
+  @override
+  void dispose() { _ctrl.dispose(); super.dispose(); }
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Colors.transparent,
+      child: AnimatedBuilder(
+        animation: _ctrl,
+        builder: (_, __) => Opacity(
+          opacity: _opacity.value,
+          child: Center(
+            child: ScaleTransition(
+              scale: _scale,
+              child: Container(
+                width: 120, height: 120,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF10B981),
+                  shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF10B981).withOpacity(0.5),
+                      blurRadius: 50, spreadRadius: 10,
+                    ),
+                  ],
+                ),
+                child: const Icon(Icons.check_rounded,
+                    color: Colors.white, size: 68),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }

@@ -344,71 +344,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         if (_selectedCalendarId != null) ...[
                           const SizedBox(height: 14),
                           const Divider(height: 1, thickness: 0.5, color: Color(0xFF2C2C2E)),
-                          const SizedBox(height: 14),
-                          Row(children: [
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: _syncing ? null : () async {
-                                  haptic();
-                                  setState(() { _syncing = true; _syncMsg = ''; });
-                                  final count = await CalendarSyncService.instance
-                                      .importFromCalendar(_selectedCalendarId!, days: 7);
-                                  setState(() {
-                                    _syncing = false;
-                                    _syncMsg = '$count événement(s) importé(s)';
-                                  });
-                                  Future.delayed(const Duration(seconds: 3),
-                                      () { if (mounted) setState(() => _syncMsg = ''); });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                      color: const Color(0xFF2C2C2E),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Center(child: Text('↓ Importer (7j)',
-                                      style: TextStyle(color: Colors.white,
-                                          fontSize: 13, fontWeight: FontWeight.w600))),
-                                ),
-                              ),
+                          const SizedBox(height: 10),
+                          // Synchro auto — un seul bouton Exporter, l'import est auto
+                          GestureDetector(
+                            onTap: _syncing ? null : () async {
+                              haptic();
+                              setState(() { _syncing = true; _syncMsg = ''; });
+                              final count = await CalendarSyncService.instance
+                                  .exportAllToCalendar(_selectedCalendarId!);
+                              setState(() {
+                                _syncing = false;
+                                _syncMsg = count > 0
+                                    ? '$count tâche(s) envoyée(s) vers le calendrier'
+                                    : 'Aucune tâche à exporter';
+                              });
+                              Future.delayed(const Duration(seconds: 3),
+                                  () { if (mounted) setState(() => _syncMsg = ''); });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                              decoration: BoxDecoration(
+                                  color: const Color(0xFF6366F1).withOpacity(0.15),
+                                  borderRadius: BorderRadius.circular(10)),
+                              child: const Center(child: Text('↑ Exporter mes tâches',
+                                  style: TextStyle(color: Color(0xFF818CF8),
+                                      fontSize: 13, fontWeight: FontWeight.w600))),
                             ),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: GestureDetector(
-                                onTap: _syncing ? null : () async {
-                                  haptic();
-                                  setState(() { _syncing = true; _syncMsg = ''; });
-                                  final count = await CalendarSyncService.instance
-                                      .exportAllToCalendar(_selectedCalendarId!);
-                                  setState(() {
-                                    _syncing = false;
-                                    _syncMsg = '$count tâche(s) exportée(s)';
-                                  });
-                                  Future.delayed(const Duration(seconds: 3),
-                                      () { if (mounted) setState(() => _syncMsg = ''); });
-                                },
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(vertical: 10),
-                                  decoration: BoxDecoration(
-                                      color: const Color(0xFF6366F1).withOpacity(0.2),
-                                      borderRadius: BorderRadius.circular(10)),
-                                  child: const Center(child: Text('↑ Exporter',
-                                      style: TextStyle(color: Color(0xFF818CF8),
-                                          fontSize: 13, fontWeight: FontWeight.w600))),
-                                ),
-                              ),
-                            ),
-                          ]),
+                          ),
                           if (_syncing)
                             const Padding(
                               padding: EdgeInsets.only(top: 10),
                               child: Center(child: SizedBox(width: 20, height: 20,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Color(0xFF6366F1)))),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Color(0xFF6366F1)))),
                             ),
                           if (_syncMsg.isNotEmpty)
                             Padding(
                               padding: const EdgeInsets.only(top: 8),
                               child: Text(_syncMsg, textAlign: TextAlign.center,
-                                  style: const TextStyle(fontSize: 12, color: Color(0xFF6366F1))),
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Color(0xFF6366F1))),
                             ),
                         ],
                       ],
