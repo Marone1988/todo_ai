@@ -90,6 +90,7 @@ class NotificationService {
           importance: Importance.max,
           priority: Priority.high,
           icon: '@mipmap/ic_launcher',
+          largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
           playSound: true,
           enableVibration: true,
           // Afficher même si l'app est en premier plan

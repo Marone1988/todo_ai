@@ -35,12 +35,14 @@ class _AlertsScreenState extends State<AlertsScreen> {
     _loadTasks();
     appLang.addListener(_onLangChange);
     appThemeMode.addListener(_onLangChange);
+    taskVersion.addListener(_loadTasks); // rafraîchit quand HomeScreen ajoute/supprime
   }
 
   @override
   void dispose() {
     appLang.removeListener(_onLangChange);
     appThemeMode.removeListener(_onLangChange);
+    taskVersion.removeListener(_loadTasks);
     super.dispose();
   }
 

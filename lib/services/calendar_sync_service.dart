@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'package:device_calendar/device_calendar.dart';
 import 'package:timezone/timezone.dart' as tz;
 import '../models/task.dart';
@@ -12,7 +13,8 @@ class CalendarSyncService {
   // ── Permissions ──────────────────────────────────────────────
 
   Future<bool> requestPermissions() async {
-    var result = await _plugin.requestPermissions();
+    // Demande via le plugin device_calendar (gère READ + WRITE)
+    final result = await _plugin.requestPermissions();
     return result.data == true;
   }
 
@@ -48,18 +50,24 @@ class CalendarSyncService {
   /// Internal import: retrieves events and skips already-imported ones.
   Future<int> _importEvents(String calendarId,
       {required DateTime from, required DateTime to}) async {
-    // Ensure permissions before retrieval
+    // Ensure permissions
     final hasPerm = await hasPermissions();
     if (!hasPerm) {
       final granted = await requestPermissions();
-      if (!granted) return 0;
+      if (!granted) return -1; // -1 = permission refusée
     }
 
-    final result = await _plugin.retrieveEvents(
-      calendarId,
-      RetrieveEventsParams(startDate: from, endDate: to),
-    );
-    if (result.data == null) return 0;
+    Result<UnmodifiableListView<Event>?>? result;
+    try {
+      result = await _plugin.retrieveEvents(
+        calendarId,
+        RetrieveEventsParams(startDate: from, endDate: to),
+      );
+    } catch (_) {
+      return -2; // -2 = erreur réseau/plugin
+    }
+
+    if (result == null || !result.isSuccess || result.data == null) return 0;
 
     // Load existing tasks once to check duplicates
     final existing = await DatabaseService.instance.getAllTasks();

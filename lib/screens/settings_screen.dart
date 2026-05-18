@@ -391,30 +391,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   ),
                   const SizedBox(height: 12),
 
-                  // ── Export PDF ───────────────────────────────────
-                  _card(
-                    onTap: _exportPdf,
-                    child: Row(children: [
-                      Container(
-                        width: 40, height: 40,
-                        decoration: BoxDecoration(
-                            color: const Color(0xFF2C2C2E),
-                            borderRadius: BorderRadius.circular(12)),
-                        child: const Icon(Icons.picture_as_pdf_outlined, color: Colors.white, size: 20),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(t('export_pdf'), style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: Colors.white)),
-                          Text(t('export_desc'), style: const TextStyle(fontSize: 12, color: Color(0xFF636366))),
-                        ],
-                      )),
-                      const Icon(Icons.chevron_right, color: Color(0xFF636366)),
-                    ]),
-                  ),
-                  const SizedBox(height: 12),
-
                   // ── À propos ─────────────────────────────────────
                   _card(child: _infoRow(t('version'), '1.1.0')),
                   const SizedBox(height: 100),
@@ -519,16 +495,25 @@ class _SettingsScreenState extends State<SettingsScreen> {
     if (_selectedCalendarId == null) return;
     setState(() { _syncing = true; _syncMsg = ''; });
     final now = DateTime.now();
-    final start = DateTime(now.year, now.month, 1);
-    final end   = DateTime(now.year, now.month + 1, 0, 23, 59, 59);
+    // Importer de -7j à +60j pour maximiser les chances de trouver des événements
+    final start = now.subtract(const Duration(days: 7));
+    final end   = now.add(const Duration(days: 60));
     final count = await CalendarSyncService.instance
         .importRangeFromCalendar(_selectedCalendarId!, from: start, to: end);
     if (mounted) {
-      setState(() {
-        _syncing = false;
-        _syncMsg = '$count événement(s) importé(s) pour ce mois';
-      });
-      Future.delayed(const Duration(seconds: 3),
+      String msg;
+      if (count == -1) {
+        msg = '❌ Permission calendrier refusée';
+      } else if (count == -2) {
+        msg = '❌ Erreur lecture calendrier';
+      } else if (count == 0) {
+        msg = 'Aucun nouvel événement trouvé';
+      } else {
+        msg = '✅ $count événement(s) importé(s)';
+        taskVersion.value++; // rafraîchit l'Agenda
+      }
+      setState(() { _syncing = false; _syncMsg = msg; });
+      Future.delayed(const Duration(seconds: 4),
           () { if (mounted) setState(() => _syncMsg = ''); });
     }
   }

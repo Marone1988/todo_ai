@@ -132,20 +132,32 @@ class LocationService {
     }
   }
 
-  /// Coordinates → place name
+  /// Coordinates → readable place name (city + road when available)
   static Future<String?> reverseGeocode(double lat, double lng) async {
     try {
       final uri = Uri.parse(
           'https://nominatim.openstreetmap.org/reverse'
-          '?lat=$lat&lon=$lng&format=json');
+          '?lat=$lat&lon=$lng&format=json&addressdetails=1&zoom=16');
       final res = await http.get(uri,
           headers: {'User-Agent': 'VocalTodoApp/1.0'});
       if (res.statusCode != 200) return null;
       final map = json.decode(res.body) as Map<String, dynamic>;
       final addr = map['address'] as Map<String, dynamic>?;
-      return addr?['road'] ??
-          addr?['suburb'] ??
-          (map['display_name'] as String?)?.split(',').first;
+      if (addr == null) return (map['display_name'] as String?)?.split(',').first;
+
+      // Construire un nom lisible : rue + ville
+      final road   = addr['road'] as String?;
+      final city   = addr['city'] as String?
+                  ?? addr['town'] as String?
+                  ?? addr['village'] as String?
+                  ?? addr['county'] as String?
+                  ?? addr['state'] as String?;
+
+      if (road != null && city != null) return '$road, $city';
+      if (city != null) return city;
+      if (road != null) return road;
+      // dernier recours : premier segment du display_name
+      return (map['display_name'] as String?)?.split(',').first;
     } catch (_) {
       return null;
     }

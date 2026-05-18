@@ -8,6 +8,10 @@ final ValueNotifier<ThemeMode> appThemeMode = ValueNotifier(ThemeMode.dark);
 /// Notifier global pour les vibrations (haptic feedback)
 final ValueNotifier<bool> hapticsEnabled = ValueNotifier(true);
 
+/// Signal de refresh global — incrémenté à chaque ajout/suppression de tâche.
+/// AlertsScreen écoute ce notifier pour se recharger sans redémarrer l'app.
+final ValueNotifier<int> taskVersion = ValueNotifier(0);
+
 /// Déclenche une courte vibration si l'option est activée.
 /// Combine HapticFeedback (Flutter natif) + Vibration package pour max fiabilité.
 void haptic() {

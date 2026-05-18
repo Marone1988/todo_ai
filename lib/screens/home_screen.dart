@@ -127,6 +127,7 @@ class _HomeScreenState extends State<HomeScreen>
     if (mounted) setState(() => _allTasks = tasks);
     WidgetService.update(tasks);
     BadgeService.instance.update(tasks);
+    taskVersion.value++; // signal AlertsScreen de se rafraîchir
   }
 
   // ── Getters tâches filtrées ─────────────────────────────────
@@ -248,7 +249,7 @@ class _HomeScreenState extends State<HomeScreen>
 
   Future<void> _processVoiceInput(String text) async {
     await _stopListening();
-    setState(() { _isProcessing = true; _statusText = t('thinking'); });
+    setState(() { _isProcessing = true; _statusText = ''; });
 
     if (_isAgendaQuery(text)) {
       final answer = await _aiService.answerAgendaQuery(text, _allTasks);
